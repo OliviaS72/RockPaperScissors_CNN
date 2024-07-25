@@ -1,0 +1,172 @@
+import numpy as np 
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras import datasets, layers, models
+
+import tensorflow_datasets as tfds
+
+train_rps, test_rps = tfds.load('rock_paper_scissors', split = ['train', 'test']) # split into training and test sets
+
+X_train = np.array(list(map(lambda x: x['image'], tfds.as_numpy(train_rps))))
+y_train = np.array(list(map(lambda y: y['label'], tfds.as_numpy(train_rps))))
+X_test = np.array(list(map(lambda i: i['image'], tfds.as_numpy(test_rps))))
+y_test = np.array(list(map(lambda l: l['label'], tfds.as_numpy(test_rps))))
+
+X_train.shape #2,520 images that have shape 300*300 pixels. Final input is 3 because the images include color.
+
+y_train.shape
+
+X_test.shape #372 images in the test set. 300 by 300 pixels with color argument included.
+
+y_test.shape
+
+X_train = X_train.astype('float32') / 255 #Convert to 32 bit floats and divide by 255 to standardize, since pixel intensity ranges from 0 to 255
+
+X_test = X_test.astype('float32') / 255
+
+class_labels = ['rock', 'paper', 'scissors'] # In the data, 0 label is for rock, 1 is for paper, and 2 is for scissors
+
+"""" A for loop runs 36 times to print out a 6 by 6 plot of images in the training set, along with the class label
+that is assigned above and the respective index """
+
+plt.figure(figsize=(10,10))
+for i in range(36):
+    plt.subplot(6,6,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(X_train[i])
+    plt.xlabel((class_labels[y_train[i]],(y_train[i])))
+plt.show()
+
+y_train #Currently, y_train simply shows the label corresponding to the hand-shape
+
+
+from tensorflow.keras.utils import to_categorical #Use this to convert to one-hot encoded probabilties for the response variable
+
+y_train = to_categorical(y_train)
+y_train.shape #2,520 images have 3 labels
+
+y_train[0] # Now, y_train shows the labels for each category, with a "1" in the place of the index that corresponds to the picture shape
+
+y_test = to_categorical(y_test) #Convert the test 
+y_test.shape
+y_test[0]
+
+print(y_test.sum(axis=0)) # Even number of image-types in the test set. 
+print(y_train.sum(axis=0)) # Even number of image-types in the train set. 
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+
+CNN = Sequential() #Start building convolutional neural network
+
+"""Start with 32 filters that are 3 by 3 matrices
+using relu activation. Take the maximum value from a 2 by 2 matrix.
+Then, add a layer with 64 filters that are 3 by 3 matrices using relu activation.
+Use another pooled layer that takes the maximum value from a 2 by 2 matrix.
+End with a final layer of 64 filters (3 by 3 matrices again). 
+"""
+CNN.add(Conv2D(filters = 32, kernel_size = (3,3), activation = 'relu', input_shape = (300, 300, 3)))
+CNN.add(MaxPooling2D(pool_size = (2,2)))
+CNN.add(Conv2D(filters = 64, kernel_size = (3,3), activation = 'relu'))
+CNN.add(MaxPooling2D(pool_size=(2, 2)))
+CNN.add(Conv2D(filters = 64, kernel_size = (3,3), activation = 'relu'))
+
+
+CNN.summary() #Check the structure of the neural network. Width and height are decreasing over time.
+
+
+CNN.add(Flatten()) #Flatten the pooled feature map that can be passed to next (input) layer
+CNN.add(Dense(units = 64, activation = 'relu')) # Dense input layer with relu activation
+CNN.add(Dense(units = 3, activation = 'softmax')) #Output layer with softmax activation because this is multiclass classification with 3 classes
+CNN.summary() # (71, 71, 64) outputs were flattened to shapes (322624) to become vectors passed through dense layers
+
+CNN.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+
+history = CNN.fit(X_train, y_train, epochs = 5, batch_size = 64, validation_split = 0.10) 
+
+plt.plot(history.history['accuracy'], label='accuracy')
+plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(loc='lower right')
+plt.xlim([0,6])
+plt.ylim([0.5, 1])
+plt.show()
+
+test_loss, test_acc = CNN.evaluate(X_test,  y_test, verbose=2)
+
+# We see increasing accuracy and validation accuracy that approaches 1.0. 
+# However, this is likely overfitting, as overall accuracy is only 0.7016.
+
+plt.plot(history.history['loss'], label = "loss")
+plt.plot(history.history['val_loss'],label = 'val_loss')
+plt.title('Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(loc = "lower right")
+plt.xlim([0,6])
+plt.show()
+
+# Both validation loss and training loss decrease over time, but trainig loss starts higher than validation loss.
+
+print(test_loss) #Testing loss is about 0.80
+print(test_acc) #Testing accuracy is about 0.77.
+
+predictions = CNN.predict(X_test) #Make predictions by passing X test values through the CNN. 
+predictions[0] # The model predicts the highest probability that the first testing image is 2 (scissors).
+
+y_test[0] # It does indeed have a 1 in the categorical encoding for class 2, so the model predicts the first image correctly.
+
+
+""""To investigate incorrect predictions, we can set "test_images" to 
+equal the arrays for the image testing data. Then, we can use a "for"
+loop to iterate over the predicted values and the actual class for the testing
+set. We keep track of the class that had the highest probability in the 
+"predict" output, as well as the highest input in the y_test array, which would
+be a one because the image does fall under the category that has a 1 after
+the one-hot encoding process. A correct prediction would have the same maximum
+value in the prediction output and the y_test output. If these are not equal,
+then we can add them to an array called "incorrect_predictions", entering the index,
+image, predicted class, and expected class into this array, which can later
+be plotted."""
+
+
+test_images = X_test
+incorrect_predictions = []
+
+for i, (predicted, expected) in enumerate(zip(predictions, y_test)):
+    predicted, expected = np.argmax(predicted), np.argmax(expected)
+    
+    if predicted != expected:
+        incorrect_predictions.append((i, test_images[i], predicted, expected))
+
+
+len(incorrect_predictions) # 111 of the test images are incorrectly classifed
+
+"""Plot incorrect classifications with their index,
+predicted class by the model, and actual class from the raw data.
+0 = rock, 1 = paper, 2 = scissors
+"""
+figure, axes = plt.subplots(nrows=5, ncols=5, figsize=(20,20))
+
+for axes, expected in zip(axes.ravel(), incorrect_predictions):
+    index, image, predicted, expected = expected
+    axes.imshow(image)
+    axes.set_xticks([]) 
+    axes.set_yticks([])  
+    axes.set_title(f'index: {index}\np: {predicted}; e: {expected}')
+plt.tight_layout()
+
+
+import pandas as pd
+
+expectedcount = list(zip(*incorrect_predictions)) #"Transpose" of list
+
+exp = expectedcount[3] # Gets the expected values out of the list
+
+print(exp.count(0)) # Counts number of images that were supposed to be predicted as rock
+print(exp.count(1)) # Counts number of images that were supposed to be predicted as paper
+print(exp.count(2)) # Counts number of images that were supposed to be predicted as scissors
