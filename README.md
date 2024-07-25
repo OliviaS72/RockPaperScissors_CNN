@@ -1,6 +1,10 @@
 # RockPaperScissors_CNN
 * **Convolutional Neural Network** for Image Classification
 * Use the 'rock_paper_scissors' dataset from tensorflow_datasets.
+* Class labels <br>
+  **0 = rock** <br>
+  **1 = paper** <br>
+  **2 = scissors** <br>
 * Training data has 2,520 images that are 300 by 300 pixels.
 * Testing data has 372 images that are 300 by 300 pixels.
 * Training images are standardized by converting each to 32-bit floats and dividing by the maximum pixel intensity of 255. The same is done for the testing data for consistency.
