@@ -13,3 +13,4 @@
 * Then, the results are flattened and dense layers allow for classification with the 'softmax' activation function.
 * The images are printed with their predicted and actual classes below each image.
 * Final testing accuracy is about 77%
+* Check the wiki for full documentation with explanation and code alternating.
