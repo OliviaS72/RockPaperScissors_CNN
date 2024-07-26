@@ -6,7 +6,14 @@ from tensorflow.keras import datasets, layers, models
 
 import tensorflow_datasets as tfds
 
+'''Since the data were already split into training and testing data, the data just needs to be loaded into two sets, 
+with the ‘split’ in the ‘tfds.load’ specifying we want to bring in the training and testing data sets
+under the names ‘train_rps’ and ‘test_rps.'''
+
 train_rps, test_rps = tfds.load('rock_paper_scissors', split = ['train', 'test']) # split into training and test sets
+
+'''Apply functions to extract the image and classification labels for the training and data set. Within each line,
+pass the output of the lambda function to list() and turn each list into a numpy array.'''
 
 X_train = np.array(list(map(lambda x: x['image'], tfds.as_numpy(train_rps))))
 y_train = np.array(list(map(lambda y: y['label'], tfds.as_numpy(train_rps))))
@@ -40,17 +47,20 @@ for i in range(36):
     plt.xlabel((class_labels[y_train[i]],(y_train[i])))
 plt.show()
 
-y_train #Currently, y_train simply shows the label corresponding to the hand-shape
+#Currently, y_train simply shows the label corresponding to the hand-shape
+y_train 
 
-
-from tensorflow.keras.utils import to_categorical #Use this to convert to one-hot encoded probabilties for the response variable
-
+#Use this to convert to one-hot encoded probabilties for the response variable
+from tensorflow.keras.utils import to_categorical 
 y_train = to_categorical(y_train)
-y_train.shape #2,520 images have 3 labels
+#2,520 images have 3 labels
+y_train.shape 
 
-y_train[0] # Now, y_train shows the labels for each category, with a "1" in the place of the index that corresponds to the picture shape
+# Now, y_train shows the labels for each category, with a "1" in the place of the index that corresponds to the picture shape
+y_train[0] 
 
-y_test = to_categorical(y_test) #Convert the test 
+#Convert the test data to one-hot encoding form
+y_test = to_categorical(y_test) 
 y_test.shape
 y_test[0]
 
@@ -60,7 +70,8 @@ print(y_train.sum(axis=0)) # Even number of image-types in the train set.
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
 
-CNN = Sequential() #Start building convolutional neural network
+#Start building convolutional neural network
+CNN = Sequential() 
 
 """Start with 32 filters that are 3 by 3 matrices
 using relu activation. Take the maximum value from a 2 by 2 matrix.
@@ -74,14 +85,17 @@ CNN.add(Conv2D(filters = 64, kernel_size = (3,3), activation = 'relu'))
 CNN.add(MaxPooling2D(pool_size=(2, 2)))
 CNN.add(Conv2D(filters = 64, kernel_size = (3,3), activation = 'relu'))
 
-
-CNN.summary() #Check the structure of the neural network. Width and height are decreasing over time.
+#Check the structure of the neural network. Width and height are decreasing over time.
+CNN.summary() 
 
 
 CNN.add(Flatten()) #Flatten the pooled feature map that can be passed to next (input) layer
 CNN.add(Dense(units = 64, activation = 'relu')) # Dense input layer with relu activation
 CNN.add(Dense(units = 3, activation = 'softmax')) #Output layer with softmax activation because this is multiclass classification with 3 classes
 CNN.summary() # (71, 71, 64) outputs were flattened to shapes (322624) to become vectors passed through dense layers
+
+'''We will use the ‘adam’ optimizer with categorical_cross entropy loss for our multi-class classification,
+returning accuracy as our metric of interest. '''
 
 CNN.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
@@ -164,9 +178,12 @@ plt.tight_layout()
 
 import pandas as pd
 
+''' Make list of incorrect predictions (containng index, image, predicted, and expected class)
+into an unpackable object.'''
+
 expectedcount = list(zip(*incorrect_predictions)) #"Transpose" of list
 
-exp = expectedcount[3] # Gets the expected values out of the list
+exp = expectedcount[3] # Gets the expected values out of the list (ie, 0 = index, 1 = image, 2 = predicted, 3 = expected) 
 
 print(exp.count(0)) # Counts number of images that were supposed to be predicted as rock
 print(exp.count(1)) # Counts number of images that were supposed to be predicted as paper
