@@ -167,6 +167,10 @@ expectedcount = list(zip(*incorrect_predictions)) #"Transpose" of list
 
 exp = expectedcount[3] # Gets the expected values out of the list
 
+print(exp.count(0)) # Counts number of images that were supposed to be predicted as rock
+print(exp.count(1)) # Counts number of images that were supposed to be predicted as paper
+print(exp.count(2)) # Counts number of images that were supposed to be predicted as scissors
+
 """The model especially seems to have trouble with distinguishing between scissors and rock.
 It does not seem to mess up paper as much. 
 We saw above there are an even number of rock, paper, and scissors images in the training and test sets. 
@@ -174,7 +178,3 @@ Some of the "rock" images seem to have patterns where the knuckles are not compl
 of scissors to be made. 
 The model could likely be improved if more pictures distinguised better between rock and scissors, such as
 if the hands were turned around so that the palm shape may not be as misleading."""
-
-print(exp.count(0)) # Counts number of images that were supposed to be predicted as rock
-print(exp.count(1)) # Counts number of images that were supposed to be predicted as paper
-print(exp.count(2)) # Counts number of images that were supposed to be predicted as scissors
